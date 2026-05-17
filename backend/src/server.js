@@ -10,6 +10,12 @@ const app = express();
 app.use(cors()); // Permite que o frontend se comunique com o backend
 app.use(express.json()); // Permite que a API entenda dados em formato JSON
 
+// Importando as rotas do sistema
+const planoRoutes = require('./routes/planoRoutes');
+
+// Vinculando as rotas ao prefixo '/api/planos'
+app.use('/api/planos', planoRoutes);
+
 // Rota de teste
 app.get('/api', (req, res) => {
   res.json({ mensagem: 'API do Sistema de Planos de Aula rodando com sucesso! 🚀' });
