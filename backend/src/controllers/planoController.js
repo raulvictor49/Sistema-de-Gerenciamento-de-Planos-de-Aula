@@ -22,11 +22,11 @@ const criarPlano = async (req, res) => {
     
     // Retorna o plano de aula que acabou de ser criado com o ID do banco
     return res.status(201).json({
-      mensagem: 'Plano de aula criado com sucesso! 📝',
+      mensagem: 'Plano de aula criado com sucesso!',
       plano: resultado.rows[0]
     });
   } catch (err) {
-    console.error('❌ Erro ao salvar plano de aula:', err.stack);
+    console.error('Erro ao salvar plano de aula:', err.stack);
     return res.status(500).json({ erro: 'Erro interno no servidor ao salvar o plano.' });
   }
 };
@@ -41,7 +41,7 @@ const listarPlanos = async (req, res) => {
     // Retorna a lista de planos encontrados (se estiver vazio, retorna uma lista vazia)
     return res.status(200).json(resultado.rows);
   } catch (err) {
-    console.error('❌ Erro ao buscar planos de aula:', err.stack);
+    console.error('Erro ao buscar planos de aula:', err.stack);
     return res.status(500).json({ erro: 'Erro interno no servidor ao buscar os planos.' });
   }
 };
@@ -71,11 +71,11 @@ const atualizarPlano = async (req, res) => {
     }
 
     return res.status(200).json({
-      mensagem: 'Plano de aula atualizado com sucesso! 🔄',
+      mensagem: 'Plano de aula atualizado com sucesso!',
       plano: resultado.rows[0]
     });
   } catch (err) {
-    console.error('❌ Erro ao atualizar plano de aula:', err.stack);
+    console.error('Erro ao atualizar plano de aula:', err.stack);
     return res.status(500).json({ erro: 'Erro interno no servidor ao atualizar o plano.' });
   }
 };
@@ -92,9 +92,9 @@ const deletarPlano = async (req, res) => {
       return res.status(404).json({ erro: 'Plano de aula não encontrado.' });
     }
 
-    return res.status(200).json({ mensagem: 'Plano de aula excluído com sucesso! 🗑️' });
+    return res.status(200).json({ mensagem: 'Plano de aula excluído com sucesso!' });
   } catch (err) {
-    console.error('❌ Erro ao deletar plano de aula:', err.stack);
+    console.error('Erro ao deletar plano de aula:', err.stack);
     return res.status(500).json({ erro: 'Erro interno no servidor ao deletar o plano.' });
   }
 };

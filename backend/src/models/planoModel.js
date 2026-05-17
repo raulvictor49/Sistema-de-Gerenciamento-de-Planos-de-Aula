@@ -16,9 +16,9 @@ const criarTabelaPlanos = async () => {
   
   try {
     await pool.query(queryText);
-    console.log('📋 Tabela "planos_aula" verificada/criada com sucesso!');
+    console.log('Tabela "planos_aula" verificada/criada com sucesso!');
   } catch (err) {
-    console.error('❌ Erro ao criar a tabela "planos_aula":', err.stack);
+    console.error('Erro ao criar a tabela "planos_aula":', err.stack);
   }
 };
 

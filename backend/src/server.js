@@ -18,7 +18,7 @@ app.use('/api/planos', planoRoutes);
 
 // Rota de teste
 app.get('/api', (req, res) => {
-  res.json({ mensagem: 'API do Sistema de Planos de Aula rodando com sucesso! 🚀' });
+  res.json({ mensagem: 'API do Sistema de Planos de Aula rodando com sucesso!' });
 });
 
 // Iniciando o servidor

@@ -12,7 +12,7 @@ const pool = new Pool({
 
 // Testa a conexão assim que o arquivo for lido
 pool.connect()
-  .then(() => console.log('📦 Conectado ao banco de dados PostgreSQL com sucesso!'))
-  .catch(err => console.error('❌ Erro ao conectar ao banco de dados:', err.stack));
+  .then(() => console.log('Conectado ao banco de dados PostgreSQL com sucesso!'))
+  .catch(err => console.error('Erro ao conectar ao banco de dados:', err.stack));
 
 module.exports = pool;
