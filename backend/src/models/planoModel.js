@@ -1,30 +1,29 @@
 const pool = require('../config/db');
 
-// Função para criar a tabela de planos de aula no banco de dados
-const criarTabelaPlanos = async () => {
-  const queryText = `
-    CREATE TABLE IF NOT EXISTS planos_aula (
-      id SERIAL PRIMARY KEY,
-      titulo VARCHAR(255) NOT NULL,
-      tema VARCHAR(255) NOT NULL,
-      objetivos TEXT NOT NULL,
-      conteudo TEXT NOT NULL,
-      metodologia TEXT,
-      criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-  `;
-  
+const criarTabela = async () => {
   try {
+    await pool.query('DROP TABLE IF EXISTS planos_aula;');
+
+    const queryText = `
+      CREATE TABLE planos_aula (
+        id SERIAL PRIMARY KEY,
+        titulo VARCHAR(255) NOT NULL,
+        objetivo TEXT NOT NULL,
+        ementa TEXT NOT NULL,
+        data_prevista DATE,
+        disciplina VARCHAR(100) NOT NULL,
+        conteudos TEXT NOT NULL,
+        recursos_apoio TEXT,
+        tags TEXT,
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+    
     await pool.query(queryText);
-    console.log('Tabela "planos_aula" verificada/criada com sucesso!');
+    console.log('Tabela planos_aula criada com sucesso!');
   } catch (err) {
-    console.error('Erro ao criar a tabela "planos_aula":', err.stack);
+    console.error('Erro ao criar a tabela:', err.stack);
   }
 };
 
-// Executa a função assim que o modelo for importado
-criarTabelaPlanos();
-
-module.exports = {
-  // Aqui futuramente será colocada as funções de Banco (buscar todos, salvar, etc.)
-};
+criarTabela();

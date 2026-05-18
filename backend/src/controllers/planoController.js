@@ -1,26 +1,25 @@
 const pool = require('../config/db');
 
-// Função para criar um novo plano de aula
+// Criar plano de aulas (POST)
 const criarPlano = async (req, res) => {
-  // Pega os dados que o frontend enviará no corpo (body) da requisição
-  const { titulo, tema, objetivos, conteudo, metodologia } = req.body;
+  // Pegando os campos enviados pelo frontend
+  const { titulo, objetivo, ementa, data_prevista, disciplina, conteudos, recursos_apoio, tags } = req.body;
 
-  // Validação básica para não salvar campos obrigatórios vazios
-  if (!titulo || !tema || !objetivos || !conteudo) {
-    return res.status(400).json({ erro: 'Por favor, preencha todos os campos obrigatórios.' });
+  // Validação dos campos
+  if (!titulo || !objetivo || !ementa || !disciplina || !conteudos) {
+    return res.status(400).json({ erro: 'Por favor, preencha todos os campos obrigatórios (Título, Objetivo, Ementa, Disciplina e Conteúdos).' });
   }
 
   try {
     const queryText = `
-      INSERT INTO planos_aula (titulo, tema, objetivos, conteudo, metodologia)
-      VALUES ($1, $2, $3, $4, $5)
+      INSERT INTO planos_aula (titulo, objetivo, ementa, data_prevista, disciplina, conteudos, recursos_apoio, tags)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING *;
     `;
-    const values = [titulo, tema, objetivos, conteudo, metodologia];
-
+    const values = [titulo, objetivo, ementa, data_prevista || null, disciplina, conteudos, recursos_apoio, tags];
+    
     const resultado = await pool.query(queryText, values);
     
-    // Retorna o plano de aula que acabou de ser criado com o ID do banco
     return res.status(201).json({
       mensagem: 'Plano de aula criado com sucesso!',
       plano: resultado.rows[0]
@@ -31,14 +30,12 @@ const criarPlano = async (req, res) => {
   }
 };
 
-// Função para listar todos os planos de aula (GET)
+// Listar plano de aulas (GET)
 const listarPlanos = async (req, res) => {
   try {
-    // Busca todos os planos, ordenando do mais recente para o mais antigo
+    // Por enquanto, traz tudo ordenado pelo mais recente (depois adicionar filtros e paginação)
     const queryText = 'SELECT * FROM planos_aula ORDER BY criado_em DESC;';
     const resultado = await pool.query(queryText);
-    
-    // Retorna a lista de planos encontrados (se estiver vazio, retorna uma lista vazia)
     return res.status(200).json(resultado.rows);
   } catch (err) {
     console.error('Erro ao buscar planos de aula:', err.stack);
@@ -46,26 +43,26 @@ const listarPlanos = async (req, res) => {
   }
 };
 
-// Função para atualizar um plano de aula existente (PUT)
+// Atualizar planos de aula (PUT)
 const atualizarPlano = async (req, res) => {
-  const { id } = req.params; // Pega o ID vindo na URL (ex: /api/planos/1)
-  const { titulo, tema, objetivos, conteudo, metodologia } = req.body;
+  const { id } = req.params;
+  const { titulo, objetivo, ementa, data_prevista, disciplina, conteudos, recursos_apoio, tags } = req.body;
 
-  if (!titulo || !tema || !objetivos || !conteudo) {
+  if (!titulo || !objetivo || !ementa || !disciplina || !conteudos) {
     return res.status(400).json({ erro: 'Por favor, preencha todos os campos obrigatórios.' });
   }
 
   try {
     const queryText = `
       UPDATE planos_aula
-      SET titulo = $1, tema = $2, objetivos = $3, conteudo = $4, metodologia = $5
-      WHERE id = $6
+      SET titulo = $1, objetivo = $2, ementa = $3, data_prevista = $4, disciplina = $5, conteudos = $6, recursos_apoio = $7, tags = $8
+      WHERE id = $9
       RETURNING *;
     `;
-    const values = [titulo, tema, objetivos, conteudo, metodologia, id];
+    const values = [titulo, objetivo, ementa, data_prevista || null, disciplina, conteudos, recursos_apoio, tags, id];
+    
     const resultado = await pool.query(queryText, values);
 
-    // Se o resultado voltar vazio, significa que o ID não existe no banco
     if (resultado.rows.length === 0) {
       return res.status(404).json({ erro: 'Plano de aula não encontrado.' });
     }
@@ -80,7 +77,7 @@ const atualizarPlano = async (req, res) => {
   }
 };
 
-// Função para deletar um plano de aula (DELETE)
+// Deletar planos de aula (DELETE)
 const deletarPlano = async (req, res) => {
   const { id } = req.params;
 
