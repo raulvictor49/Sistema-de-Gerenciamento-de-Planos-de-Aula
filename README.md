@@ -44,3 +44,6 @@ Disponibilização do endpoint /health no backend para monitoramento do estado d
 Para testar basta abrir uma nova aba no navegador e digitar o seguinte comando:
 
 - http://localhost:3000/health
+
+## Vídeo demonstração
+https://www.youtube.com/watch?v=FJ_jHSWxB8Y
