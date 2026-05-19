@@ -29,7 +29,7 @@ No seu terminal, execute os comandos abaixo para iniciar o servidor:
 
 O servidor backend será iniciado na porta 3000.
 
-### 5. Instalar Dependências e Rodar o Frontend
+#### 5. Instalar Dependências e Rodar o Frontend
 Abra uma nova janela no seu terminal, navegue até a pasta do frontend e inicie a interface:
 - cd frontend
 - npm install
