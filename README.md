@@ -19,6 +19,7 @@ Passos
 1. Clonar o Repositório
 git clone https://github.com/raulvictor49/Sistema-de-Gerenciamento-de-Planos-de-Aula.git
 
+2. Acessar o arquivo
 cd Sistema-de-Gerenciamento-de-Planos-de-Aula
 
 3. Configurar as Variáveis de Ambiente
