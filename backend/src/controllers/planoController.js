@@ -1,34 +1,113 @@
 const pool = require('../config/db');
 const { z } = require('zod');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
+// Inicializa a SDK do Gemini utilizando a chave guardada nas variaveis de ambiente
+const genAI = process.env.GEMINI_API_KEY ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY) : null;
+
+// Schema de validacao para criacao e edicao de planos
 const planoSchema = z.object({
-  titulo: z.string({ required_error: "O título é obrigatório" })
-           .min(3, "O título deve ter pelo menos 3 caracteres"),
-  disciplina: z.string({ required_error: "A disciplina é obrigatória" })
+  titulo: z.string({ required_error: "O titulo e obrigatorio" })
+           .min(3, "O titulo deve ter pelo menos 3 caracteres"),
+  disciplina: z.string({ required_error: "A disciplina e obrigatoria" })
                .min(2, "A disciplina deve ter pelo menos 2 caracteres"),
-  objetivo: z.string({ required_error: "O objetivo é obrigatório" })
+  objetivo: z.string({ required_error: "O objetivo e obrigatorio" })
              .min(5, "O objetivo deve ter pelo menos 5 caracteres"),
-  ementa: z.string({ required_error: "A ementa é obrigatória" })
+  ementa: z.string({ required_error: "A ementa e obrigatoria" })
            .min(5, "A ementa deve ter pelo menos 5 caracteres"),
-  conteudos: z.string({ required_error: "Os conteúdos programáticos são obrigatórios" })
-              .min(5, "Os conteúdos devem ter pelo menos 5 caracteres"),
-  data_prevista: z.string().nullable().optional().or(z.literal('')), // Aceita string de data, nulo ou vazio
+  conteudos: z.string({ required_error: "Os conteudos programaticos sao obrigatorios" })
+              .min(5, "Os conteudos devem ter pelo menos 5 caracteres"),
+  data_prevista: z.string().nullable().optional().or(z.literal('')),
   recursos_apoio: z.string().nullable().optional(),
   tags: z.string().nullable().optional()
 });
 
-// Cria plano de aula vazio (POST)
-const criarPlano = async (req, res) => {
-  // Deixa o Zod validar os dados que vieram do frontend
-  const validacao = planoSchema.safeParse(req.body);
+// Schema de validacao para a requisicao de IA
+const iaSchema = z.object({
+  titulo: z.string({ required_error: "O titulo e necessario para gerar as recomendacoes" }).min(3),
+  disciplina: z.string({ required_error: "A disciplina e necessaria para gerar as recomendacoes" }).min(2),
+  ementa: z.string({ required_error: "A ementa e necessaria para gerar as recomendacoes" }).min(5)
+});
 
-  // Se a validação falhar, pegamos os erros e devolvemos um HTTP 400 amigável
+// FUNCAO: Gera recomendacoes utilizando IA (GEMINI)
+const gerarPlanoIA = async (req, res) => {
+  const validacao = iaSchema.safeParse(req.body);
+  
   if (!validacao.success) {
-    const mensagensDeErro = validacao.error.errors.map(err => err.message).join(' | ');
+    const mensagensDeErro = validacao.error.issues.map(err => err.message).join(' | ');
     return res.status(400).json({ erro: mensagensDeErro });
   }
 
-  // Se passou, usa-se os dados higienizados e validados pelo Zod
+  if (!genAI) {
+    return res.status(500).json({ erro: "Configuracao de IA ausente. Verifique a GEMINI_API_KEY" });
+  }
+
+  const { titulo, disciplina, ementa } = validacao.data;
+
+  try {
+    // responseMimeType forca retorno em JSON puro, eliminando markdown na raiz
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.0-flash",
+      generationConfig: {
+        responseMimeType: "application/json"
+      }
+    });
+
+    const prompt = `Voce e um assistente pedagogico. Com base na disciplina "${disciplina}", no titulo de aula "${titulo}" e na ementa/resumo providenciada: "${ementa}", gere recomendacoes complementares para este plano de aula.
+    Sua resposta deve ser estritamente um objeto JSON valido, sem qualquer formatacao markdown adicional (nao inclua as tres crases ou a palavra json).
+    O formato do objeto retornado deve seguir exatamente esta estrutura de chaves:
+    {
+      "topicos_relacionados": "Lista textual contendo os topicos relacionados para a aula",
+      "conteudos_complementares": "Sugestoes de conteudos complementares e materiais de apoio",
+      "tags_recomendadas": "Tres tags recomendadas para o plano, separadas por virgula"
+    }`;
+
+    // Timeout de 10s para evitar requisicoes penduradas
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Timeout da IA")), 10000)
+    );
+
+    const resultadoIA = await Promise.race([
+      model.generateContent(prompt),
+      timeoutPromise
+    ]);
+
+    const textoResposta = resultadoIA.response.text();
+
+    // Extracao robusta do JSON, independente de texto antes/depois das crases
+    let textoLimpo = textoResposta.trim();
+    const match = textoLimpo.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if (match) {
+      textoLimpo = match[1].trim();
+    }
+
+    const dadosRecomendados = JSON.parse(textoLimpo);
+
+    // Validacao estrutural do JSON retornado pela IA
+    const chavesEsperadas = ['topicos_relacionados', 'conteudos_complementares', 'tags_recomendadas'];
+    const valido = chavesEsperadas.every(c => Object.keys(dadosRecomendados).includes(c));
+
+    if (!valido) {
+      return res.status(500).json({ erro: "A IA retornou uma estrutura inesperada." });
+    }
+
+    return res.status(200).json(dadosRecomendados);
+
+  } catch (err) {
+    console.error("Erro na geracao de recomendacoes via IA:", err.stack);
+    return res.status(500).json({ erro: "Falha ao processar as recomendacoes com Inteligencia Artificial" });
+  }
+};
+
+// Criar plano de aula (POST)
+const criarPlano = async (req, res) => {
+  const validacao = planoSchema.safeParse(req.body);
+
+  if (!validacao.success) {
+    const mensagensDeErro = validacao.error.issues.map(err => err.message).join(' | ');
+    return res.status(400).json({ erro: mensagensDeErro });
+  }
+
   const { titulo, objetivo, ementa, data_prevista, disciplina, conteudos, recursos_apoio, tags } = validacao.data;
 
   try {
@@ -41,7 +120,7 @@ const criarPlano = async (req, res) => {
     const resultado = await pool.query(queryText, values);
     
     return res.status(201).json({
-      mensagem: 'Plano de aula criado com sucesso!',
+      mensagem: 'Plano de aula criado com sucesso.',
       plano: resultado.rows[0]
     });
   } catch (err) {
@@ -50,7 +129,7 @@ const criarPlano = async (req, res) => {
   }
 };
 
-// Listar planos de aula com filtros, busca e paginação (GET)
+// Listar planos de aula com filtros, busca e paginacao (GET)
 const listarPlanos = async (req, res) => {
   try {
     const { page = 1, limit = 5, disciplina, tag, data_prevista, busca, ordenarPor } = req.query;
@@ -126,15 +205,14 @@ const listarPlanos = async (req, res) => {
   }
 };
 
-// Atualizar planos de aula (PUT)
+// Atualizar plano de aula (PUT)
 const atualizarPlano = async (req, res) => {
   const { id } = req.params;
-
-  // Validação também na edição para garantir consistência dos dados
   const validacao = planoSchema.safeParse(req.body);
+
   if (!validacao.success) {
-    const mensagensDeErro = validacao.error.errors.map(err => err.message).join(' | ');
-    return res.status(400).json({ erro: mensajesDeErro });
+    const mensagensDeErro = validacao.error.issues.map(err => err.message).join(' | ');
+    return res.status(400).json({ erro: mensagensDeErro });
   }
 
   const { titulo, objetivo, ementa, data_prevista, disciplina, conteudos, recursos_apoio, tags } = validacao.data;
@@ -153,7 +231,7 @@ const atualizarPlano = async (req, res) => {
       return res.status(404).json({ erro: 'Plano de aula não encontrado.' });
     }
 
-    return res.status(200).json({ mensagem: 'Plano de aula atualizado com sucesso!', plano: resultado.rows[0] });
+    return res.status(200).json({ mensagem: 'Plano de aula atualizado com sucesso.', plano: resultado.rows[0] });
   } catch (err) {
     console.error('Erro ao atualizar plano de aula:', err.stack);
     return res.status(500).json({ erro: 'Erro interno no servidor.' });
@@ -172,7 +250,7 @@ const deletarPlano = async (req, res) => {
       return res.status(404).json({ erro: 'Plano de aula não encontrado.' });
     }
 
-    return res.status(200).json({ mensagem: 'Plano de aula excluído com sucesso!' });
+    return res.status(200).json({ mensagem: 'Plano de aula excluído com sucesso.' });
   } catch (err) {
     console.error('Erro ao deletar plano de aula:', err.stack);
     return res.status(500).json({ erro: 'Erro interno no servidor.' });
@@ -184,4 +262,5 @@ module.exports = {
   listarPlanos,
   atualizarPlano,
   deletarPlano,
+  gerarPlanoIA,
 };
