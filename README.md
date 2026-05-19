@@ -1,4 +1,4 @@
-Sistema de Gerenciamento de Planos de Aula
+###Sistema de Gerenciamento de Planos de Aula
 Uma aplicação completa (Fullstack) para criação, organização e recomendação pedagógica de planos de aula, integrada com inteligência artificial.
 
 ## Tecnologias Utilizadas
