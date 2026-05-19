@@ -3,7 +3,9 @@ Uma aplicação completa (Fullstack) para criação, organização e recomendaç
 
 ## Tecnologias Utilizadas
 Frontend: React.js, TailwindCSS, Axios
+
 Backend: Node.js, Express, Zod (Validação)
+
 Banco de Dados: PostgreSQL (Persistência de dados)
 
 ## Como Executar o Projeto
